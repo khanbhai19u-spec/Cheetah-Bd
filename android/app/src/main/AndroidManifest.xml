@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- এই পারমিশন লাইনটি এখানে যুক্ত করতে হবে -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application
+        android:label="Streamix Pro"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        ...
