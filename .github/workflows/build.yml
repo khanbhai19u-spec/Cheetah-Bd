@@ -16,6 +16,9 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
+      - name: Create Android Native Files
+        run: flutter create . --platforms=android
+
       - run: flutter pub get
       - run: flutter build apk --release
 
