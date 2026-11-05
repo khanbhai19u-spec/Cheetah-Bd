@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../models/movie_model.dart';
 
 class DetailsScreen extends StatefulWidget {
@@ -14,6 +17,8 @@ class DetailsScreen extends StatefulWidget {
 class _DetailsScreenState extends State<DetailsScreen> {
   late WebViewController _controller;
   bool isLoading = true;
+  bool isDownloading = false;
+  double downloadProgress = 0.0;
 
   @override
   void initState() {
@@ -35,6 +40,63 @@ class _DetailsScreenState extends State<DetailsScreen> {
       ..loadRequest(Uri.parse(streamUrl));
   }
 
+  // অ্যাপের ভেতরে ফাইল ডাউনলোড করার ফাংশন
+  Future<void> downloadMovie() async {
+    try {
+      setState(() {
+        isDownloading = true;
+        downloadProgress = 0.0;
+      });
+
+      // ডাউনলোডের সোর্স লিংক (প্রয়োজনমতো পরিবর্তন করে নিতে পারো)
+      final videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+      
+      Dio dio = Dio();
+
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      String savePath = '${directory?.path}/${widget.movie.title}.mp4';
+
+      await dio.download(
+        videoUrl,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            setState(() {
+              downloadProgress = received / total;
+            });
+          }
+        },
+      );
+
+      setState(() {
+        isDownloading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ডাউনলোড সফল হয়েছে! ফাইল সেভ হয়েছে: $savePath'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        isDownloading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ডাউনলোড ব্যর্থ হয়েছে: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,6 +113,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       ),
       body: Column(
         children: [
+          // ভিডিও প্লেয়ার সেকশন
           Container(
             height: 230,
             width: double.infinity,
@@ -64,6 +127,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
               ],
             ),
           ),
+          
+          // ডিটেইলস ও ডাউনলোড বাটন সেকশন
           Expanded(
             child: ListView(
               padding: EdgeInsets.all(16),
@@ -88,6 +153,44 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   ],
                 ),
                 SizedBox(height: 15),
+
+                // ইন-অ্যাপ ডাউনলোড বাটন বা প্রোগ্রেস বার
+                isDownloading
+                    ? Column(
+                        children: [
+                          LinearProgressIndicator(
+                            value: downloadProgress,
+                            backgroundColor: Colors.grey[800],
+                            color: Colors.redAccent,
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'ডাউনলোড হচ্ছে: ${(downloadProgress * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
+                      )
+                    : ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: downloadMovie,
+                        icon: Icon(Icons.download_rounded, size: 22),
+                        label: Text(
+                          'অ্যাপের ভেতর ডাউনলোড করুন',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                SizedBox(height: 20),
                 Text(
                   'ওভারভিউ:',
                   style: TextStyle(
