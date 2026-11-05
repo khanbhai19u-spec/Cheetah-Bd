@@ -24,6 +24,14 @@ jobs:
       - name: Create Android Native Files
         run: flutter create . --platforms=android
 
+      - name: Add Internet Permission Automatically
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST_PATH"
+            echo "Internet permission added successfully!"
+          fi
+
       - run: flutter pub get
       - run: flutter build apk --release
 
